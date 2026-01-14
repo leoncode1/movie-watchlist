@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// THINGS TO REMEMBER:
+// Arrays ([]) mean “many”
+// No array means “one”
+// Foreign keys live on the side that “belongs”
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
+  // Removed due to not having the extra folder
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+// User -> Movie -> Watchlist
+
+model User {
+  id String @id @default(uuid()) 
+  name String
+  email String @unique
+  password String
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  // User can create MANY movies.
+  movies Movie[] @relation("MovieCreator")
+  
+  // User can have MANY movies in Watchlist.
+  watchlistItems WatchlistItem[]
+}
+
+model Movie {
+  id String @id @default(uuid())
+  title String
+  overview String? // ? means Optional
+  releaseYear Int
+  genres String[] @default([])
+  runtime Int?
+  posterUrl String?
+  createdBy String
+  
+  createdAt DateTime @default(now())
+
+  // Relations
+  // Inverse side of User.movies
+  // Foreign Key: Movie.createdBy -> User.id (referenced from User)
+  // "Each movie has was CREATED by ONE user."
+  creator User @relation("MovieCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  
+  // "MANY users can add this movie to their Watchlists"
+  watchlistItems WatchlistItem[]
+}
+
+model WatchlistItem {
+  id String @id  @default(uuid())
+  userId String
+  movieId String
+  status WatchListStatus @default(PLANNED)
+  // ^ Set as enum to hold default values.
+  rating Int?
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Changed to @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  // Composite Unique Constraint
+  // "a USER can only have ONE watchlist entry PER movie."
+  @@unique([userId, movieId])
+}
+
+enum WatchListStatus {
+  PLANNED
+  WATCHING
+  COMPLETED
+  DROPPED
+}
+
+
