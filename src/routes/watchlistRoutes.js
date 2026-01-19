@@ -1,6 +1,6 @@
 import express from "express";
 import { requireAuth } from "../middleware/authMiddleware.js";
-import { addToWatchlist, getMyWatchlist, updateWatchlistItem } from "../controllers/watchlistController.js";
+import { addToWatchlist, getMyWatchlist, updateWatchlistItem, deleteWatchlistItem } from "../controllers/watchlistController.js";
 
 const router = express.Router();
 
@@ -12,5 +12,11 @@ router.patch(
     requireAuth,
     updateWatchlistItem
 );
+
+router.delete(
+    "/:id",
+    requireAuth,
+    deleteWatchlistItem
+)
 
 export default router;

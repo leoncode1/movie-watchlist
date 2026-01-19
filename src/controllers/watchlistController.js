@@ -8,9 +8,10 @@ export const addToWatchlist = async (req, res) => {
             return res.status(400).json({message: "movieId is required."});
         }
 
+
         const watchlistItem = await prisma.watchlistItem.create({
             data: {
-                userId: req.user.userId,
+                userId: req.user.userId, // userId is extracted from req
                 movieId,
             }
         });
@@ -85,3 +86,29 @@ export const updateWatchlistItem = async(req, res) => {
         res.status(500).json({message: "Server error"});
     }
 };
+
+export const deleteWatchlistItem = async (req, res) => {
+    try{
+        const { id } = req.params;
+
+        const watchlistItem = await prisma.watchlistItem.findFirst({
+            where: {
+                id, 
+                userId: req.user.userId,
+            },
+        });
+
+        if(!watchlistItem){
+            return res.status(404).json({message:"Watchlist item not found."})
+        }
+
+        await prisma.watchlistItem.delete({
+            where: {id},
+        });
+
+        res.json({message: "Removed from watchlist"});
+
+    } catch(error){
+        console.error(500).json({message: "Server error"});
+    }
+}
