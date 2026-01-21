@@ -7,7 +7,7 @@ export const register = async (req, res) => {
 
     try{
         //Removed password validation from controller
-        
+
         const { name, email, password } = parsed.data;
 
         // Check if user already exists
@@ -51,10 +51,7 @@ export const login = async (req, res) => {
         // Sets the request body of the input provided to 'email' and 'password'.
         const { email, password } = req.body;
 
-        // Checks for empty requests, undefined values.
-        if (!email || !password){
-            return res.status(400).json({message: "All fields required."});
-        }
+        //Removed validation input for email/password
 
         // Queries DB using the email provided.
         const user = await prisma.user.findUnique({
