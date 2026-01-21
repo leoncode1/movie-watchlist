@@ -49,3 +49,66 @@ export const createMovie = async (req, res) => {
         res.status(500).json({message: "Server error"});
     }
 };
+
+export const updateMovie = async (req, res) => {
+    try{
+        const { id } = req.params;
+        const { title, overview, releaseYear } = req.body;
+
+        //Find movie & verify ownership
+        const movie = await prisma.movie.findFirst({
+            where: {
+                id, 
+                createdBy: req.user.userId,
+            },
+        });
+
+        if(!movie){
+            return res.status(404).json({message:"Movie not found or unauthorized."});
+        }
+
+        const updated = await prisma.movie.update({
+            where: { id },
+            data: {
+                title, 
+                overview,
+                releaseYear,
+            },
+        });
+
+        res.json(updated);
+
+    }catch(error){
+        console.error("Update movie error:", error);
+        res.status(500).json({message: "Server error."});
+    };
+};
+
+export const deleteMovie = async (req, res) => {
+    
+    try{
+        const { id } = req.params;
+
+        const movie = await prisma.movie.findFirst({
+            where: {
+                id,
+                createdBy: req.user.userId,
+            },
+        });
+
+        if (!movie){
+            return res.status(404).json({message: "Movie not found or unauthorized."});
+        }
+
+        await prisma.movie.delete({
+            where: {id}
+        });
+
+        res.status(204).send();
+
+    }catch(error){
+        console.error("Delete movie error:", error);
+        res.status(500).json({message: "Server error."});
+    }
+
+};

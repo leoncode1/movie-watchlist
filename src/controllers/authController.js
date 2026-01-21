@@ -8,7 +8,7 @@ export const register = async (req, res) => {
     try{
         //Removed password validation from controller
 
-        const { name, email, password } = parsed.data;
+        const { name, email, password } = req.body;
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
