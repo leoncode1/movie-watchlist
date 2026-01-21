@@ -1,18 +1,23 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../config/db.js";
 import jwt from "jsonwebtoken";
+import { registerSchema } from "../validation/authSchemas.js";
 
 export const register = async (req, res) => {
 
     try{
 
-        // Extract input
-        const { name, email, password } = req.body;
-
-        // Basic Validation
-        if (!name || !email || !password){
-            return res.status(400).json({message: "All fields are required."});
+        //Password Validation
+        const parsed = registerSchema.safeParse(req.body);
+        if(!parsed.success){
+            return res.status(400).json({
+                errors: parsed.error.issues.map( //Changed from errors to issues
+                    err => err.message
+                ),
+            });
         }
+
+        const { name, email, password } = parsed.data;
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
