@@ -6,17 +6,8 @@ import { registerSchema } from "../validation/authSchemas.js";
 export const register = async (req, res) => {
 
     try{
-
-        //Password Validation
-        const parsed = registerSchema.safeParse(req.body);
-        if(!parsed.success){
-            return res.status(400).json({
-                errors: parsed.error.issues.map( //Changed from errors to issues
-                    err => err.message
-                ),
-            });
-        }
-
+        //Removed password validation from controller
+        
         const { name, email, password } = parsed.data;
 
         // Check if user already exists
