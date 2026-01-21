@@ -2,18 +2,18 @@ import jwt from "jsonwebtoken";
 
 export const requireAuth = (req, res, next) => {
 
+    // Get auth header
+    const authHeader = req.headers.authorization;
+
+    if(!authHeader || !authHeader.startsWith("Bearer ")){
+        // Returning a response, stops execution (next())
+        return res.status(401).json({message: "Authorization token required."});
+    }
+
+    // Extract token
+    const token = authHeader.split(" ")[1];
+
     try{
-        // Get auth header
-        const authHeader = req.headers.authorization;
-
-        if(!authHeader || !authHeader.startsWith("Bearer ")){
-            // Returning a response, stops execution (next())
-            return res.status(401).json({message: "Not authorized."});
-        }
-
-        // Extract token
-        const token = authHeader.split(" ")[1];
-
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -24,8 +24,12 @@ export const requireAuth = (req, res, next) => {
 
         // Continue to next middleware / controller
         next();
+
     } catch(error){
-        console.error("Auth middleware error:", error);
-        return res.status(500).json({message: "Invalid or expired token."});
+        if (error.name === "TokenExpiredError"){
+            return res.status(401).json({message: "Token expired."});
+        }
+
+        return res.status(401).json({message: "Invalid token."});
     }
 };
