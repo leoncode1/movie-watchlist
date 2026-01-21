@@ -75,23 +75,98 @@ export const login = async (req, res) => {
         }
 
         //If User logs in successfully, token is created...
-        const token = jwt.sign(
+        const accessToken = jwt.sign(
             { userId: user.id },    // userId is included in payload
             process.env.JWT_SECRET, // Token is signed using the JWT_SECRET
             {expiresIn: process.env.JWT_EXPIRES_IN} // expiration is also put in payload
         );
 
+        // Refresh Token
+        const refreshToken = jwt.sign(
+            {userId: user.id},
+            process.env.JWT_REFRESH_SECRET,
+            {expiresIn: "7d"}
+        );
+
+        // Stores refresh token in DB
+        await prisma.user.update({
+            where: {id: user.id},
+            data: {refreshToken},
+        });
+
         return res.json({
-            token, //Token represents their session
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-            },
+            accessToken, //Token represents their session
+            refreshToken,
+            // user: {
+            //     id: user.id,
+            //     name: user.name,
+            //     email: user.email,
+            // },
         });
 
     } catch(error){
         console.error("Login error:", error);
         res.status(500).json({message: "Server error."});
     }
+};
+
+export const refresh = async (req, res) => {
+
+    try{
+
+        const { refreshToken } = req.body;
+
+        if(!refreshToken){
+            return res.status(401).json({message: "Refresh token expired."});
+        }
+
+        const payload = jwt.verify(
+            refreshToken,
+            process.env.JWT_REFRESH_SECRET
+        );
+
+        const user = await prisma.user.findUnique({
+            where: {id: payload.userId},
+        });
+
+        if (!user || user.refreshToken !== refreshToken){
+            return res.status(403).json({message: "Invalid refresh token."});
+        }
+
+        //Rotate refresh token
+        const newAccessToken = jwt.sign(
+            {userId: user.id},
+            process.env.JWT_SECRET,
+            {expiresIn: process.env.JWT_EXPIRES_IN}
+        );
+
+        const newRefreshToken = jwt.sign(
+            {userId: user.id},
+            process.env.JWT_SECRET,
+            {expiresIn: "7d"}
+        );
+
+        await prisma.user.update({
+            where: {id: user.id},
+            data: {refreshToken: newRefreshToken},
+        });
+
+        res.json({
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+        });
+
+    }catch(error){
+        console.error("Refresh token error:", error);
+        res.status(403).json({message: "Invalid or expired refresh token."});
+    }
+}
+
+export const logout = async (req, res) => {
+    await prisma.user.update({
+        where: {id: req.user.userId},
+        data: {refreshToken: null},
+    });
+
+    res.status(204).send();
 };
